@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gemstone &amp; Mineral Map of Tanzania | House of Gems Tanzania</title>
+<meta name="description" content="Interactive map of Tanzania's gemstone and mineral regions — Tanzanite, tsavorite, ruby, sapphire, spinel, gold, diamonds and more.">
+<link rel="icon" href="{{LOGO}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<!--
+  Gemstone Map of Tanzania — a fully self-contained page.
+  Everything it needs (styles, script, map outline, data and logo) is inside this one file,
+  so it can be opened, shared or embedded on its own.
+  Map geometry: Natural Earth (public domain). Locations are approximate.
+-->
+<style>
+  :root {
+    --indigo: #2e3192; --indigo-900: #12143f; --ink: #0b0c26; --gold: #f2cf1a;
+    --gem: #8b6cff; --precious: #f2cf1a; --industrial: #3fb8a6; --store: #ffffff;
+    --panel: #ffffff; --text: #2b2b3a; --muted: #6b6b80; --line: #e6e2d8;
+    --serif: "Cormorant Garamond", Georgia, serif; --sans: "Jost", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--sans); font-weight: 300; color: var(--text); background: var(--ink); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; }
+
+  /* top bar */
+  .gm-top { display: flex; align-items: center; gap: 18px; padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--line); z-index: 5; }
+  .gm-top img { height: 36px; width: auto; display: block; }
+  .gm-top__title { font-size: .72rem; letter-spacing: .26em; text-transform: uppercase; color: var(--indigo); border-left: 1px solid var(--line); padding-left: 18px; }
+  .gm-top__back { margin-left: auto; font-size: .72rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--indigo-900); padding: 10px 18px; border: 1px solid var(--indigo); border-radius: 4px; transition: all .3s; white-space: nowrap; }
+  .gm-top__back:hover { background: var(--indigo); color: #fff; }
+
+  /* layout */
+  .gm { flex: 1; display: grid; grid-template-columns: 380px 1fr; min-height: 0; }
+  .gm-side { background: var(--panel); display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); }
+  .gm-side__head { padding: 28px 26px 18px; }
+  .gm-eyebrow { font-size: .7rem; font-weight: 500; letter-spacing: .28em; text-transform: uppercase; color: var(--indigo); margin: 0 0 10px; }
+  .gm-side h1 { font-family: var(--serif); font-weight: 500; font-size: 2.1rem; line-height: 1.1; color: var(--indigo-900); margin: 0 0 10px; }
+  .gm-side__intro { font-size: .92rem; color: var(--muted); margin: 0 0 18px; line-height: 1.6; }
+  .gm-search { width: 100%; padding: 12px 14px 12px 38px; font: 300 .95rem var(--sans); border: 1px solid var(--line); border-radius: 4px; background: #faf8f3 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6b80' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-5-5'/%3E%3C/svg%3E") 12px center no-repeat; }
+  .gm-search:focus { outline: none; border-color: var(--indigo); background-color: #fff; }
+  .gm-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .gm-chip { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: .78rem; border: 1px solid var(--line); border-radius: 30px; background: #fff; cursor: pointer; transition: all .2s; color: var(--text); }
+  .gm-chip i { width: 9px; height: 9px; transform: rotate(45deg); background: var(--c); box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .gm-chip[aria-pressed="false"] { opacity: .45; }
+  .gm-chip:hover { border-color: var(--indigo); }
+  .gm-chip b { font-weight: 500; color: var(--muted); font-size: .72rem; }
+
+  .gm-list { flex: 1; overflow-y: auto; padding: 0 14px 20px; border-top: 1px solid var(--line); }
+  .gm-group { font-size: .68rem; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding: 18px 12px 8px; }
+  .gm-item { display: grid; grid-template-columns: 18px 1fr; gap: 12px; width: 100%; text-align: left; padding: 11px 12px; border: 0; border-radius: 6px; background: none; cursor: pointer; transition: background .2s; color: var(--text); }
+  .gm-item:hover, .gm-item.is-hover { background: #f4f1ea; }
+  .gm-item.is-active { background: #eceaf8; }
+  .gm-item i { width: 10px; height: 10px; margin: 6px 0 0 3px; transform: rotate(45deg); background: var(--c); box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .gm-item strong { display: block; font-weight: 500; font-size: .95rem; color: var(--indigo-900); }
+  .gm-item span { display: block; font-size: .82rem; color: var(--muted); }
+  .gm-empty { padding: 30px 12px; color: var(--muted); font-size: .9rem; }
+  .gm-note { padding: 14px 26px; font-size: .74rem; color: var(--muted); border-top: 1px solid var(--line); line-height: 1.5; }
+
+  /* map */
+  .gm-map { position: relative; overflow: hidden; background: radial-gradient(90% 90% at 60% 45%, #1b1f6b 0%, var(--indigo-900) 55%, var(--ink) 100%); touch-action: none; }
+  .gm-map svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; }
+  .gm-map svg.is-dragging { cursor: grabbing; }
+  .neighbor { fill: #141640; stroke: #2a2d6e; stroke-width: .6; }
+  .tz { fill: #2f35a0; stroke: var(--gold); stroke-width: 1.3; stroke-linejoin: round; filter: url(#glow); }
+  .lake { fill: #0e3a7a; stroke: #2c5fb0; stroke-width: .5; }
+  .lbl-country { fill: rgba(255,255,255,.28); font: 500 9px var(--sans); letter-spacing: .3em; text-transform: uppercase; pointer-events: none; }
+  .lbl-water { fill: rgba(140,180,255,.6); font: italic 400 10px var(--serif); pointer-events: none; }
+  .lbl-city { fill: rgba(255,255,255,.8); font: 400 7.5px var(--sans); letter-spacing: .06em; pointer-events: none; paint-order: stroke; stroke: rgba(11,12,38,.8); stroke-width: 2.2px; }
+  .city-dot { fill: #fff; }
+  .kili { fill: #fff; opacity: .9; }
+
+  .mk { cursor: pointer; }
+  .mk__halo { opacity: 0; transition: opacity .25s; }
+  .mk__shape { stroke: rgba(11,12,38,.9); stroke-width: 1.2; transition: transform .25s; transform-box: fill-box; transform-origin: center; }
+  .mk:hover .mk__shape, .mk.is-hover .mk__shape { transform: scale(1.35); }
+  .mk:hover .mk__halo, .mk.is-hover .mk__halo, .mk.is-active .mk__halo { opacity: 1; }
+  .mk.is-active .mk__shape { transform: scale(1.5); stroke: #fff; }
+  .mk.is-dim { opacity: .18; pointer-events: none; }
+  .mk.is-hidden { display: none; }
+  .mk__pulse { fill: none; stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: pulse 2.6s ease-out infinite; }
+  @keyframes pulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.8); opacity: 0; } }
+
+  .gm-tip { position: absolute; pointer-events: none; background: rgba(11,12,38,.92); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: .8rem; white-space: nowrap; transform: translate(-50%, calc(-100% - 14px)); opacity: 0; transition: opacity .15s; border: 1px solid rgba(242,207,26,.35); }
+  .gm-tip.is-on { opacity: 1; }
+  .gm-tip b { font-weight: 500; }
+
+  .gm-zoom { position: absolute; right: 18px; top: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .gm-zoom button { width: 40px; height: 40px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(11,12,38,.6); color: #fff; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(6px); transition: all .2s; }
+  .gm-zoom button:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+
+  .gm-legend { position: absolute; right: 18px; bottom: 18px; background: rgba(11,12,38,.72); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 12px 16px; color: rgba(255,255,255,.85); font-size: .76rem; }
+  .gm-legend div { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  .gm-legend i { width: 9px; height: 9px; transform: rotate(45deg); background: var(--c); }
+  .gm-legend .tri { width: 0; height: 0; transform: none; background: none; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #fff; }
+
+  .gm-card { position: absolute; left: 22px; bottom: 22px; width: min(380px, calc(100% - 44px)); background: #fff; border-radius: 10px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); padding: 24px 24px 22px; transform: translateY(20px); opacity: 0; visibility: hidden; transition: all .35s cubic-bezier(.2,.7,.2,1); border-top: 3px solid var(--c, var(--gold)); }
+  .gm-card.is-open { transform: none; opacity: 1; visibility: visible; }
+  .gm-card__close { position: absolute; right: 12px; top: 10px; width: 32px; height: 32px; border: 0; background: none; font-size: 1.4rem; color: var(--muted); cursor: pointer; border-radius: 50%; }
+  .gm-card__close:hover { background: #f4f1ea; }
+  .gm-card__cat { font-size: .66rem; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; color: var(--indigo); margin: 0 0 6px; }
+  .gm-card h2 { font-family: var(--serif); font-weight: 500; font-size: 1.7rem; line-height: 1.1; margin: 0 0 4px; color: var(--indigo-900); padding-right: 24px; }
+  .gm-card__region { font-size: .85rem; color: var(--muted); margin: 0 0 12px; }
+  .gm-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .gm-tags span { font-size: .74rem; padding: 4px 10px; border-radius: 20px; background: #f1eefc; color: var(--indigo); }
+  .gm-card p.gm-card__desc { font-size: .9rem; line-height: 1.6; margin: 0 0 16px; }
+  .gm-card__foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .74rem; color: var(--muted); }
+  .gm-card__cta { font-size: .72rem; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: #fff; background: var(--indigo); padding: 10px 16px; border-radius: 4px; white-space: nowrap; }
+  .gm-card__cta:hover { background: var(--indigo-900); }
+
+  @media (max-width: 900px) {
+    .gm { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+    .gm-map { order: -1; }
+    .gm-side { border-right: 0; }
+    .gm-list { overflow: visible; }
+    .gm-top__title { display: none; }
+    .gm-legend { display: none; }
+    .gm-card { left: 12px; bottom: 12px; width: calc(100% - 24px); padding: 18px; }
+    body { display: block; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mk__pulse { animation: none; opacity: 0; } }
+</style>
+</head>
+<body>
+
+<header class="gm-top">
+  <a href="index.html" aria-label="House of Gems Tanzania — home"><img src="{{LOGO}}" alt="House of Gems Tanzania"></a>
+  <span class="gm-top__title">Gemstone &amp; Mineral Map</span>
+  <a class="gm-top__back" href="index.html">&larr; Back to website</a>
+</header>
+
+<div class="gm">
+  <aside class="gm-side">
+    <div class="gm-side__head">
+      <p class="gm-eyebrow">Interactive Map</p>
+      <h1>Treasures of Tanzania</h1>
+      <p class="gm-side__intro">Explore where Tanzania's gemstones and minerals are found — from the Tanzanite mines of Merelani to the sapphire gravels of Tunduru. Select a location to learn more.</p>
+      <input class="gm-search" id="gmSearch" type="search" placeholder="Search a gem, mineral or place…" aria-label="Search locations">
+      <div class="gm-filters" id="gmFilters" role="group" aria-label="Filter by type"></div>
+    </div>
+    <div class="gm-list" id="gmList" aria-live="polite"></div>
+    <p class="gm-note">Locations are approximate and shown for general information. Map outline © Natural Earth (public domain).</p>
+  </aside>
+
+  <section class="gm-map" id="gmMap" aria-label="Map of Tanzania">
+    <svg id="gmSvg" viewBox="0 0 {{W}} {{H}}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of Tanzania with gemstone and mineral locations">
+      <defs>
+        <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feColorMatrix in="b" type="matrix" values="0 0 0 0 0.95  0 0 0 0 0.8  0 0 0 0 0.1  0 0 0 .45 0"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <radialGradient id="halo"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="gmBase"></g>
+      <g id="gmLabels"></g>
+      <g id="gmMarkers"></g>
+    </svg>
+    <div class="gm-zoom">
+      <button id="zIn" aria-label="Zoom in">+</button>
+      <button id="zOut" aria-label="Zoom out">&minus;</button>
+      <button id="zReset" aria-label="Reset view">&#8634;</button>
+    </div>
+    <div class="gm-legend" id="gmLegend"></div>
+    <div class="gm-tip" id="gmTip"></div>
+    <article class="gm-card" id="gmCard" aria-live="polite">
+      <button class="gm-card__close" id="gmClose" aria-label="Close">&times;</button>
+      <p class="gm-card__cat" id="cCat"></p>
+      <h2 id="cName"></h2>
+      <p class="gm-card__region" id="cRegion"></p>
+      <div class="gm-tags" id="cTags"></div>
+      <p class="gm-card__desc" id="cDesc"></p>
+      <div class="gm-card__foot"><span id="cCoord"></span><a class="gm-card__cta" id="cCta" href="#"></a></div>
+    </article>
+  </section>
+</div>
+
+<script>
+(() => {
+  const MAP = {{MAPDATA}};
+  const SITES = {{SITES}};
+  const CATS = {
+    gem:        { label: "Gemstones",            color: "#8b6cff", cta: "Enquire about gemstones", href: "contact.html?interest=Coloured%20Gemstones" },
+    precious:   { label: "Gold & Diamonds",      color: "#f2cf1a" },
+    industrial: { label: "Industrial & Energy",  color: "#3fb8a6" },
+    store:      { label: "Our Showrooms",        color: "#ffffff", cta: "Showroom details" }
+  };
+  const CITIES = [
+    { n: "Dodoma (capital)", lat: -6.17, lon: 35.74, dx: -5, anchor: "end" }, { n: "Dar es Salaam", lat: -6.8, lon: 39.28, dx: -4, anchor: "end" },
+    { n: "Arusha", lat: -3.37, lon: 36.69, dy: -9 }, { n: "Mwanza", lat: -2.52, lon: 32.9 },
+    { n: "Mbeya", lat: -8.9, lon: 33.46, dy: 11 }, { n: "Zanzibar", lat: -6.16, lon: 39.2, dx: 6 },
+    { n: "Tanga", lat: -5.07, lon: 39.1 }, { n: "Mtwara", lat: -10.27, lon: 40.18, dx: -4, anchor: "end" }
+  ];
+  const COUNTRIES = [
+    ["Kenya", -2.0, 38.6], ["Uganda", -0.65, 31.2], ["Rwanda", -2.1, 29.75], ["Burundi", -3.5, 29.95],
+    ["DR Congo", -6.5, 28.95], ["Zambia", -10.2, 31.1], ["Malawi", -11.6, 33.6], ["Mozambique", -12.0, 38.6]
+  ];
+  const WATER = [
+    ["Lake Victoria", -1.55, 32.6], ["Lake Tanganyika", -6.9, 29.95, -72], ["Lake Nyasa", -10.6, 34.45, -78],
+    ["Indian Ocean", -8.0, 40.3, 0], ["Lake Rukwa", -8.15, 32.25, -45]
+  ];
+
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const proj = (lat, lon) => [(lon - MAP.lon0) * MAP.k, (MAP.lat0 - lat) * MAP.k];
+
+  /* ---------- Base map ---------- */
+  const base = $("gmBase"), labels = $("gmLabels"), markers = $("gmMarkers");
+  MAP.neighbors.forEach(n => el("path", { d: n.d, class: "neighbor" }, base));
+  el("path", { d: MAP.tanzania, class: "tz" }, base);
+  MAP.lakes.forEach(l => el("path", { d: l.d, class: "lake" }, base));
+
+  COUNTRIES.forEach(([n, lat, lon]) => {
+    const [x, y] = proj(lat, lon);
+    el("text", { x, y, class: "lbl-country", "text-anchor": "middle" }, labels).textContent = n;
+  });
+  WATER.forEach(([n, lat, lon, rot = 0]) => {
+    const [x, y] = proj(lat, lon);
+    el("text", { x, y, class: "lbl-water", "text-anchor": "middle", transform: `rotate(${rot} ${x} ${y})` }, labels).textContent = n;
+  });
+  const scaled = []; // elements that should keep a constant on-screen size
+  CITIES.forEach(c => {
+    const [x, y] = proj(c.lat, c.lon);
+    const g = el("g", {}, labels);
+    el("circle", { r: 1.8, class: "city-dot" }, g);
+    el("text", { x: c.dx ?? 5, y: (c.dy ?? 3), class: "lbl-city", "text-anchor": c.anchor || "start" }, g).textContent = c.n;
+    scaled.push({ g, x, y });
+  });
+  { // Mount Kilimanjaro
+    const [x, y] = proj(-3.07, 37.35);
+    const g = el("g", {}, labels);
+    el("path", { d: "M0,-6 L5.5,4 L-5.5,4Z", class: "kili" }, g);
+    el("text", { x: 8, y: 3, class: "lbl-city" }, g).textContent = "Mt Kilimanjaro";
+    scaled.push({ g, x, y });
+  }
+
+  /* ---------- Markers ---------- */
+  const SHAPES = {
+    gem: "M0,-6 L5,0 L0,6 L-5,0Z",
+    precious: "M0,-5.5 L5.5,0 L0,5.5 L-5.5,0Z",
+    industrial: "M-4.2,-4.2 H4.2 V4.2 H-4.2Z",
+    store: "M0,-7 C3.9,-7 6,-4.2 6,-1.5 C6,2.6 0,7 0,7 C0,7 -6,2.6 -6,-1.5 C-6,-4.2 -3.9,-7 0,-7Z"
+  };
+  const byId = {};
+  SITES.forEach(s => {
+    const [x, y] = proj(s.lat, s.lon);
+    const color = CATS[s.cat].color;
+    const g = el("g", { class: "mk", tabindex: 0, role: "button", "aria-label": `${s.name}: ${s.minerals.join(", ")}` }, markers);
+    el("circle", { r: 14, fill: "url(#halo)", class: "mk__halo" }, g);
+    if (s.id === "merelani") el("circle", { r: 6, stroke: color, class: "mk__pulse" }, g);
+    el("path", { d: SHAPES[s.cat], fill: color, class: "mk__shape" }, g);
+    if (s.cat === "store") el("circle", { r: 2, cy: -1.5, fill: "#2e3192" }, g);
+    s.x = x; s.y = y; s.g = g;
+    byId[s.id] = s;
+    scaled.push({ g, x, y });
+    g.addEventListener("click", e => { e.stopPropagation(); select(s.id, true); });
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(s.id, true); } });
+    g.addEventListener("mouseenter", () => hover(s.id, true));
+    g.addEventListener("mouseleave", () => hover(s.id, false));
+  });
+
+  /* ---------- View box: zoom & pan ---------- */
+  const svg = $("gmSvg");
+  const HOME = { x: 0, y: 0, w: MAP.w, h: MAP.h };
+  let vb = { ...HOME }, anim = null;
+  function apply() {
+    svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    // keep markers and labels the same size on screen, whatever the zoom or device
+    const r = svg.getBoundingClientRect();
+    const upp = r.width ? Math.max(vb.w / r.width, vb.h / r.height) : vb.w / MAP.w;
+    const s = upp * 1.2;
+    scaled.forEach(o => o.g.setAttribute("transform", `translate(${o.x} ${o.y}) scale(${s})`));
+  }
+  function clamp(v) {
+    const w = Math.min(Math.max(v.w, MAP.w / 6), MAP.w * 1.2), h = w * MAP.h / MAP.w;
+    return { w, h, x: Math.min(Math.max(v.x, -w * .4), MAP.w - w * .6), y: Math.min(Math.max(v.y, -h * .4), MAP.h - h * .6) };
+  }
+  function animateTo(t, ms = 650) {
+    cancelAnimationFrame(anim);
+    const from = { ...vb }, to = clamp(t), t0 = performance.now();
+    const step = now => {
+      const p = Math.min((now - t0) / ms, 1), e = 1 - Math.pow(1 - p, 3);
+      vb = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e, w: from.w + (to.w - from.w) * e, h: from.h + (to.h - from.h) * e };
+      apply();
+      if (p < 1) anim = requestAnimationFrame(step);
+    };
+    anim = requestAnimationFrame(step);
+  }
+  function zoomAt(f, cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2, smooth = true) {
+    const w = vb.w / f, h = vb.h / f;
+    const t = { x: cx - (cx - vb.x) / f, y: cy - (cy - vb.y) / f, w, h };
+    smooth ? animateTo(t, 300) : (vb = clamp(t), apply());
+  }
+  const toSvg = (cx, cy) => {
+    const r = svg.getBoundingClientRect();
+    const scale = Math.max(vb.w / r.width, vb.h / r.height);
+    const ox = (r.width - vb.w / scale) / 2, oy = (r.height - vb.h / scale) / 2;
+    return [vb.x + (cx - r.left - ox) * scale, vb.y + (cy - r.top - oy) * scale, scale];
+  };
+  $("zIn").onclick = () => zoomAt(1.6);
+  $("zOut").onclick = () => zoomAt(1 / 1.6);
+  $("zReset").onclick = () => animateTo(HOME);
+  svg.addEventListener("wheel", e => {
+    e.preventDefault();
+    const [x, y] = toSvg(e.clientX, e.clientY);
+    zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, x, y, false);
+  }, { passive: false });
+
+  // drag + pinch
+  const ptrs = new Map(); let drag = null, pinch = null, moved = false;
+  svg.addEventListener("pointerdown", e => {
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    moved = false;
+    if (ptrs.size === 1) drag = { x: e.clientX, y: e.clientY, vb: { ...vb } };
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), w: vb.w }; drag = null; }
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      const [cx, cy] = toSvg((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      zoomAt(vb.w / (pinch.w * pinch.d / d), cx, cy, false);
+      moved = true;
+    } else if (drag) {
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!moved && Math.hypot(dx, dy) < 4) return;
+      if (!moved) svg.setPointerCapture(e.pointerId);
+      moved = true; svg.classList.add("is-dragging");
+      const [, , scale] = toSvg(0, 0);
+      vb = clamp({ ...drag.vb, x: drag.vb.x - dx * scale, y: drag.vb.y - dy * scale }); apply();
+    }
+  });
+  const end = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) { drag = null; svg.classList.remove("is-dragging"); } };
+  svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
+  svg.addEventListener("click", () => { if (!moved) closeCard(); });
+
+  /* ---------- Sidebar: filters, search, list ---------- */
+  const active = new Set(Object.keys(CATS));
+  const filters = $("gmFilters"), list = $("gmList"), search = $("gmSearch"), legend = $("gmLegend");
+  Object.entries(CATS).forEach(([k, c]) => {
+    const n = SITES.filter(s => s.cat === k).length;
+    const b = document.createElement("button");
+    b.className = "gm-chip"; b.setAttribute("aria-pressed", "true"); b.style.setProperty("--c", c.color);
+    b.innerHTML = `<i></i>${c.label} <b>${n}</b>`;
+    b.onclick = () => { active.has(k) ? active.delete(k) : active.add(k); b.setAttribute("aria-pressed", active.has(k)); render(); };
+    filters.appendChild(b);
+    legend.insertAdjacentHTML("beforeend", `<div><i style="--c:${c.color}"></i>${c.label}</div>`);
+  });
+  legend.insertAdjacentHTML("beforeend", `<div><i class="tri"></i>Mount Kilimanjaro</div>`);
+
+  let current = null;
+  function render() {
+    const q = search.value.trim().toLowerCase();
+    list.innerHTML = "";
+    let shown = 0;
+    Object.entries(CATS).forEach(([k, c]) => {
+      const items = SITES.filter(s => s.cat === k);
+      const match = s => !q || [s.name, s.region, ...s.minerals].join(" ").toLowerCase().includes(q);
+      const visible = items.filter(s => active.has(k) && match(s));
+      items.forEach(s => {
+        s.g.classList.toggle("is-hidden", !active.has(k));
+        s.g.classList.toggle("is-dim", active.has(k) && !match(s));
+      });
+      if (!visible.length) return;
+      list.insertAdjacentHTML("beforeend", `<div class="gm-group">${c.label}</div>`);
+      visible.forEach(s => {
+        const b = document.createElement("button");
+        b.className = "gm-item" + (current === s.id ? " is-active" : "");
+        b.dataset.id = s.id; b.style.setProperty("--c", c.color);
+        b.innerHTML = `<i></i><div><strong>${s.name}</strong><span>${s.minerals.join(" · ")}</span></div>`;
+        b.onclick = () => select(s.id, true);
+        b.onmouseenter = () => hover(s.id, true);
+        b.onmouseleave = () => hover(s.id, false);
+        list.appendChild(b);
+        shown++;
+      });
+    });
+    if (!shown) list.innerHTML = `<p class="gm-empty">No locations match "${search.value}". Try another gem or place.</p>`;
+  }
+  search.addEventListener("input", render);
+
+  /* ---------- Hover tooltip ---------- */
+  const tip = $("gmTip"), mapBox = $("gmMap");
+  function hover(id, on) {
+    const s = byId[id];
+    s.g.classList.toggle("is-hover", on);
+    const item = list.querySelector(`[data-id="${id}"]`);
+    if (item) item.classList.toggle("is-hover", on);
+    if (!on) { tip.classList.remove("is-on"); return; }
+    const r = s.g.getBoundingClientRect(), m = mapBox.getBoundingClientRect();
+    tip.innerHTML = `<b>${s.name}</b> · ${s.minerals.slice(0, 3).join(", ")}`;
+    tip.style.left = (r.left + r.width / 2 - m.left) + "px";
+    tip.style.top = (r.top - m.top) + "px";
+    tip.classList.add("is-on");
+  }
+
+  /* ---------- Info card ---------- */
+  const card = $("gmCard");
+  function select(id, fly) {
+    const s = byId[id]; if (!s) return;
+    if (!active.has(s.cat)) { active.add(s.cat); filters.children[Object.keys(CATS).indexOf(s.cat)].setAttribute("aria-pressed", "true"); }
+    current = id;
+    SITES.forEach(o => o.g.classList.toggle("is-active", o.id === id));
+    markers.appendChild(s.g); // bring to front
+    const c = CATS[s.cat];
+    card.style.setProperty("--c", c.color === "#ffffff" ? "#2e3192" : c.color);
+    $("cCat").textContent = c.label;
+    $("cName").textContent = s.name;
+    $("cRegion").textContent = s.region;
+    $("cTags").innerHTML = s.minerals.map(m => `<span>${m}</span>`).join("");
+    $("cDesc").textContent = s.desc;
+    $("cCoord").textContent = `${Math.abs(s.lat).toFixed(2)}°S, ${s.lon.toFixed(2)}°E`;
+    const cta = $("cCta");
+    if (s.cat === "store") { cta.textContent = c.cta; cta.href = s.link; cta.hidden = false; }
+    else if (s.cat === "gem") { cta.textContent = c.cta; cta.href = c.href; cta.hidden = false; }
+    else cta.hidden = true;
+    card.classList.add("is-open");
+    render();
+    const item = list.querySelector(`[data-id="${id}"]`);
+    if (item) item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (fly) {
+      const w = Math.min(vb.w, MAP.w / 2.4), h = w * MAP.h / MAP.w;
+      // place the marker clear of the info card (card sits bottom-left)
+      const wide = mapBox.clientWidth > 700;
+      animateTo({ x: s.x - w * (wide ? 0.36 : 0.5), y: s.y - h * (wide ? 0.42 : 0.3), w, h });
+    }
+    history.replaceState(null, "", "#" + id);
+  }
+  function closeCard() {
+    card.classList.remove("is-open"); current = null;
+    SITES.forEach(o => o.g.classList.remove("is-active"));
+    render();
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  $("gmClose").onclick = closeCard;
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeCard(); });
+
+  apply();
+  window.addEventListener("resize", apply);
+  render();
+  const start = location.hash.slice(1);
+  if (byId[start]) setTimeout(() => select(start, true), 400);
+})();
+</script>
+</body>
+</html>
